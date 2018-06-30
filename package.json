@@ -1,0 +1,12 @@
+{
+  "name": "soak-testing",
+  "description": "Test suite used for soak testing live swarms",
+  "version": "0.2.build_patch",
+  "main": "index.js",
+  "author": "John Lam and Monty Thibault",
+  "license": "ISC",
+  "dependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0"
+  }
+}
