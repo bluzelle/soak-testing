@@ -4,32 +4,24 @@ const assert = require('assert');
 
 describe('js api', () => {
 
+    before(() =>
+        api.connect(`ws://${process.env.address}:${process.env.port}`, `${process.env.uuid}`));
+
     context('swarm', () => {
-
-        beforeEach(() =>
-            api.connect(`ws://${process.env.address}:${process.env.port}`, 'a23160bb-b2fb-45e5-85ec-156f8de5b89f'));
-
-        it('should be responsive', () => {
-            // ping
-        });
 
         context('non crud operations', () => {
 
-            const arr = [0,1,2];
-
             before(async () => {
-                api.connect(`ws://${process.env.address}:${process.env.port}`, 'a23160bb-b2fb-45e5-85ec-156f8de5b89f');
 
-                await Promise.all(arr.map((v, i) => api.create('key' + i, 'abcdef')));
+                await api.create(`key0`, 'abcdef');
+                await api.create(`key1`, 'abcdef');
+                await api.create(`key2`, 'abcdef');
             });
 
             after(async () => {
-                await Promise.all(arr.map((v,i) => api.remove('key' + i)));
-            });
-
-            it('should be able to return key list', async () => {
-                const result = await api.keys();
-                assert.deepEqual(result, [ 'key2', 'key1', 'key0' ])
+                await api.remove('key0');
+                await api.remove('key1');
+                await api.remove('key2');
             });
 
             it('should be able to return size', async () => {
@@ -39,7 +31,12 @@ describe('js api', () => {
             it('should be able to has', async () => {
                 assert(await api.has('key0'));
                 assert(!await api.has('nonExistent'));
-            })
+            });
+
+            it('should be able to return key list', async () => {
+                const result = await api.keys();
+                assert.deepEqual(result.sort(), ['key2', 'key1', 'key0'].sort())
+            });
         });
 
         context('should be able to handle string fields', () => {

@@ -4,7 +4,8 @@
   "version": "0.2.build_patch",
   "main": "index.js",
   "scripts": {
-    "test-daemon": "address=testnet-dev.bluzelle.com port=51010 mocha test/*.js --exit --timeout 10000"
+    "test-daemon": "address=testnet.bluzelle.com port=51010 mocha test/api.test.js --exit --timeout 10000",
+    "soak-test": "address=testnet.bluzelle.com port=51010 mocha test/soak.test.js --exit --timeout 10000"
   },
   "author": "John Lam and Monty Thibault",
   "license": "ISC",
