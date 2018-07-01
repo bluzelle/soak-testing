@@ -3,6 +3,9 @@
   "description": "Test suite used for soak testing live swarms",
   "version": "0.2.build_patch",
   "main": "index.js",
+  "scripts": {
+    "test-daemon": "address=testnet-dev.bluzelle.com port=51010 mocha test/*.js --exit --timeout 10000"
+  },
   "author": "John Lam and Monty Thibault",
   "license": "ISC",
   "dependencies": {
