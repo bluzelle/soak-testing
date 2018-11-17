@@ -10,19 +10,14 @@ matrix:
 language: node_js
 
 node_js:
-  - "node" # Use latest NodeJS
-
-jobs:
-  include:
-    - script: ./soak-test.sh
+  - node
 
 before_install:
-  - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
-  - git submodule update --init
+  - git submodule update --init --recursive
   - cd bluzelle-js
-  - npm install
+  - yarn install
+  - webpack
   - cd ..
-  - npm install
+  - yarn install
 
-dependencies:
-  - bluzelle-js: git+ssh://git@github.com:bluzelle/bluzelle-js.git
+script: ./soak-test.sh
