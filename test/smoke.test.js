@@ -1,24 +1,27 @@
-const api = require('../bluzelle-js/src/api');
+const {BluzelleClient} = require('../bluzelle-js/lib/bluzelle-node');
 const assert = require('assert');
 
+let api;
 
-describe('js api', () => {
+describe('smoke tests', () => {
 
-    before(() =>
-        api.connect(`ws://${process.env.address}:${process.env.port}`, `${process.env.uuid}`));
+    before('initialize client and connect', async () => {
+        api = new BluzelleClient(`ws://${process.env.ADDRESS}:${process.env.PORT}`, `${process.env.UUID}`, false);
+        await api.connect();
+    });
 
     context('swarm', () => {
 
         context('non crud operations', () => {
 
-            before(async () => {
+            before('seed database', async () => {
 
                 await api.create(`key0`, 'abcdef');
                 await api.create(`key1`, 'abcdef');
                 await api.create(`key2`, 'abcdef');
             });
 
-            after(async () => {
+            after('clear database', async () => {
                 await api.remove('key0');
                 await api.remove('key1');
                 await api.remove('key2');
@@ -57,50 +60,6 @@ describe('js api', () => {
             it('should be able to remove', async () => {
                 await api.remove(`strKey`);
                 assert(!await api.has(`strKey`))
-            });
-
-        });
-
-        context('should be able to handle number fields', () => {
-
-            it('should be able to create', async () => {
-                await api.create(`numKey`, 123);
-            });
-
-            it('should be able to read', async () => {
-                assert(await api.read(`numKey`) === 123);
-            });
-
-            it('should be able to update', async () => {
-                await api.update(`numKey`, 123456);
-                assert(await api.read(`numKey`) === 123456);
-            });
-
-            it('should be able to remove', async () => {
-                await api.remove(`numKey`);
-                assert(!await api.has(`numKey`));
-            });
-        });
-
-        context('should be able to handle object fields', () => {
-
-            it('should be able to create', async () => {
-                await api.create(`objKey`, {a: 'abc'});
-            });
-
-            it('should be able to read', async () => {
-                assert((await api.read(`objKey`)).a === 'abc');
-            });
-
-            it('should be able to update', async () => {
-                await api.update(`objKey`, {b: 123});
-
-                assert((await api.read(`objKey`)).b === 123);
-            });
-
-            it('should be able to remove', async () => {
-                await api.remove(`objKey`);
-                assert(!await api.has(`objKey`));
             });
         });
     });
