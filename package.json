@@ -1,13 +1,12 @@
 {
   "name": "soak-testing",
-  "description": "Test suite used for soak testing live swarms",
-  "version": "0.2.build_patch",
-  "main": "index.js",
+  "description": "Test suite used to hit test swarms",
+  "version": "0.3.0",
   "scripts": {
-    "test-daemon": "address=testnet-dev.bluzelle.com port=51010 mocha test/api.test.js --exit --timeout 10000",
-    "soak-test": "address=testnet-dev.bluzelle.com port=51010 mocha test/soak.test.js --exit --timeout 10000"
+    "smoke-test": "mocha test/smoke.test.js",
+    "performance-testing": "node test/performance-testing.js"
   },
-  "author": "John Lam and Monty Thibault",
+  "author": "John Lam",
   "license": "ISC",
   "dependencies": {
     "chai": "^4.1.2",
