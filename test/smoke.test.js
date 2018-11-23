@@ -10,6 +10,8 @@ describe('smoke tests', () => {
         await api.connect();
     });
 
+    after('disconnect', () => api && api.disconnect());
+
     context('swarm', () => {
 
         context('non crud operations', () => {

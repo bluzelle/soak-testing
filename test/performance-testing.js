@@ -20,14 +20,15 @@ let api;
 
         const options = {api, array: ARRAY_OF_NUM_OF_KEYS_SIZE, numberOfKeys};
 
-        await profiler(createTest, {...options, numberOfKeys, value: 'hello'});
+        await profiler(createTest, {...options, value: 'hello'});
 
-        await profiler(readTest, {...options, numberOfKeys});
+        await profiler(readTest, {...options});
 
-        await profiler(updateTest, {...options, numberOfKeys, value: 'newValue'});
+        await profiler(updateTest, {...options, value: 'newValue'});
 
         await profiler(removeTest, {...options});
 
+        api.disconnect();
         process.exit(0)
 
 })(parseInt(process.env.NUMBER_OF_KEYS)).catch((err) => {
@@ -68,7 +69,7 @@ const updateTest = async ({api, array, numberOfKeys, value}) => {
     assert((await api.read(`batch-key${array.length - 1}`)) === value);
 };
 
-const batchOperation = async ({client, array, operation, value, delayBetweenBatch = 300, batchSize = 10} = {}) => {
+const batchOperation = async ({client, array, operation, value, delayBetweenBatch = 0, batchSize = 10} = {}) => {
 
     const batched = chunk(array, batchSize);
 

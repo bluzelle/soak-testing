@@ -1,11 +1,10 @@
 {
   "name": "soak-testing",
-  "description": "Test suite used for soak testing live swarms",
+  "description": "Test suite used to hit test swarms",
   "version": "0.3.0",
-  "main": "index.js",
   "scripts": {
-    "smoke-test": "ADDRESS=testnet-dev.bluzelle.com PORT=51010 mocha test/api.test.js",
-    "soak-test": "ADDRESS=testnet-dev.bluzelle.com PORT=51010 mocha test/soak.test.js"
+    "smoke-test": "mocha test/smoke.test.js",
+    "performance-testing": "node test/performance-testing.js"
   },
   "author": "John Lam",
   "license": "ISC",

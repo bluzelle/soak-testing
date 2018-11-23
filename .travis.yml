@@ -6,6 +6,9 @@ sudo: required
 matrix:
   include:
     - os: osx
+      osx_image: xcode10.1
+      env:
+        - MATRIX_EVAL="brew update && brew unlink python && brew install protobuf && brew install snappy && brew install lz4"
 
 language: node_js
 
@@ -13,6 +16,7 @@ node_js:
   - node
 
 before_install:
+  - eval "${MATRIX_EVAL}"
   - git submodule update --init --recursive
   - cd bluzelle-js
   - yarn install
@@ -20,4 +24,9 @@ before_install:
   - cd ..
   - yarn install
 
-script: ./soak-test.sh
+before_script:
+  - export UUID=`date +%d-%m-%y-%H-%M-%S`
+
+script:
+  - yarn smoke-test
+  - yarn performance-testing
