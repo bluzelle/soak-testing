@@ -25,12 +25,13 @@ before_install:
   - yarn install
 
 before_script:
-  - |
-    if [ "$TRAVIS_BRANCH" = "master" ]; then
-        export ADDRESS=testnet.bluzelle.com;
-      else
-        export ADDRESS=testnet-dev.bluzelle.com;
-    fi
+#  - |
+#    if [ "$TRAVIS_BRANCH" = "master" ]; then
+#        export ADDRESS=testnet.bluzelle.com;
+#      else
+#        export ADDRESS=testnet-dev.bluzelle.com;
+#    fi
+  - export ADDRESS=test.network.bluzelle.com
 
 script:
   - yarn smoke-test
