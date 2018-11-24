@@ -25,6 +25,8 @@ before_install:
   - yarn install
 
 before_script:
+  - if [ "$TRAVIS_OS_NAME" = "master" ]; then export ADDRESS=testnet.bluzelle.com; fi
+  - if [ "$TRAVIS_OS_NAME" = "devel" ]; then export ADDRESS=testnet-dev.bluzelle.com; fi
   - export UUID=`date +%d-%m-%y-%H-%M-%S`
 
 script:
