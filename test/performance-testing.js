@@ -18,13 +18,16 @@ let api;
 
         await api.connect();
 
-        const options = {api, array: ARRAY_OF_NUM_OF_KEYS_SIZE, numberOfKeys};
+        const options = {api, array: ARRAY_OF_NUM_OF_KEYS_SIZE, numberOfKeys, delay: 100};
 
-        await profiler(createTest, {...options, value: 'hello'});
+        const initialValue = 'hello';
+        const updatedValue = 'newValue';
 
-        await profiler(readTest, {...options});
+        await profiler(createTest, {...options, value: initialValue});
 
-        await profiler(updateTest, {...options, value: 'newValue'});
+        await profiler(readTest, {...options, value: initialValue});
+
+        await profiler(updateTest, {...options, value: updatedValue});
 
         await profiler(removeTest, {...options});
 
@@ -37,45 +40,56 @@ let api;
     process.exit(1)
 });
 
-const removeTest = async ({api, array}) => {
+const removeTest = async (...args) => {
 
-    await batchOperation({client: api, array, operation: 'remove'});
+    const {api} = args;
+
+    await batchOperation({...args, operation: 'remove'});
 
     assert((await api.keys()).length === 0);
 };
 
-const readTest = async ({api, array, numberOfKeys}) => {
+const readTest = async (...args) => {
 
-    const results = await batchOperation({client: api, array, operation: 'read', delayBetweenBatch: 0, batchSize: 30});
+    const {numberOfKeys, value} = args;
+
+    const results = await batchOperation({...args, operation: 'read', delayBetweenBatch: 0, batchSize: 30});
 
     assert(results.length === numberOfKeys);
 
-    assert(results.every((value) => value === 'hello'))
+    assert(results.every((val) => val === value))
 };
 
-const createTest = async ({api, array, numberOfKeys, value}) => {
+const createTest = async (...args) => {
 
-    await batchOperation({client: api, array, operation: 'create', value});
+    const {api, numberOfKeys} = args;
+
+    await batchOperation({...args, operation: 'create'});
 
     const keys = await api.keys();
 
     assert(keys.length === numberOfKeys);
 };
 
-const updateTest = async ({api, array, numberOfKeys, value}) => {
+const updateTest = async (...args) => {
 
-    await batchOperation({client: api, array, operation: 'update', value});
+    const {value, array} = args;
+
+    await batchOperation({...args, operation: 'update'});
 
     assert((await api.read(`batch-key${array.length - 1}`)) === value);
 };
 
-const batchOperation = async ({client, array, operation, value, delayBetweenBatch = 0, batchSize = 10} = {}) => {
+const batchOperation = async ({api, array, operation, value, delayBetweenBatch = 0, batchSize = 10} = {}) => {
+
+    // debug undefined: api, array, operation, value, are all undefined here
+    console.log(array);
 
     const batched = chunk(array, batchSize);
 
     const delayedBatch = injectDelays(batched);
 
-    return await processMixedTypeArray({api: client, array: delayedBatch, delay: delayBetweenBatch, operation, value});
+    return await processMixedTypeArray({api, array: delayedBatch, delay: delayBetweenBatch, operation, value});
 };
 
 const injectDelays = (array) => array.reduce((acc, currentValue) => {
@@ -96,20 +110,23 @@ const chunk = (array, batchSize = 5) => {
     return batched;
 };
 
-const processMixedTypeArray = async ({api, array, delay, operation, value}) => {
+const processMixedTypeArray = async ({api, array, delay, operation, value, batchSize}) => {
 
-    console.log(`\nRunning ${operation}s`);
+    console.log(`\nRunning ${operation}s, processing ${batchSize} keys per batch`);
+    if (delay > 0) {
+        console.log(`Delaying ${delay}ms between batch calls`)
+    }
 
     let results = [];
     let returnValue;
 
     for (element of array) {
 
-        if (typeof(element) === 'object') {
-            console.log(`  Processing: ${element.length} keys`)
-        } else {
-            console.log(`  Awaiting delay`)
-        }
+        // if (typeof(element) === 'object') {
+        //     console.log(`  Processing: ${element.length} keys`)
+        // } else {
+        //     // console.log(`  Awaiting delay`)
+        // }
 
         let batchStartTime = new Date();
 
@@ -134,7 +151,8 @@ const processMixedTypeArray = async ({api, array, delay, operation, value}) => {
         }
 
         let batchTimeElapsed = new Date() - batchStartTime;
-        console.log(`    Completed in: ${batchTimeElapsed}ms`);
+
+        if (typeof(element) === 'object') { console.log(`    Completed in: ${batchTimeElapsed}ms`) }
     }
 
     return results;
