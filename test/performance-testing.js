@@ -7,8 +7,10 @@ let api;
 
         const ARRAY_OF_NUM_OF_KEYS_SIZE = [...Array(numberOfKeys).keys()];
 
+        const PERFORMANCE_TEST_UUID = process.env.UUID + '-performance-test';
+
         console.log(
-            'Using uuid: ' + process.env.UUID +
+            'Using uuid: ' + PERFORMANCE_TEST_UUID +
             '\nUsing address: ' + process.env.ADDRESS +
             '\nUsing port: ' + process.env.PORT +
             '\nNumber of keys: ' + process.env.NUMBER_OF_KEYS
@@ -16,7 +18,7 @@ let api;
 
         api = bluzelle({
             entry: `ws://${process.env.ADDRESS}:${process.env.PORT}`,
-            uuid: process.env.UUID,
+            uuid: PERFORMANCE_TEST_UUID,
             private_pem: 'MHQCAQEEIFH0TCvEu585ygDovjHE9SxW5KztFhbm4iCVOC67h0tEoAcGBSuBBAAKoUQDQgAE9Icrml+X41VC6HTX21HulbJo+pV1mtWn4+evJAi8ZeeLEJp4xg++JHoDm8rQbGWfVM84eqnb/RVuIXqoz6F9Bg=='
         });
 
