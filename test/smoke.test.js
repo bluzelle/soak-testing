@@ -42,17 +42,10 @@ describe('smoke tests', () => {
 
         context('non crud operations', () => {
 
+            const ARRAY_OF_NUMS = [...Array(10).keys()];
+
             before('seed database', async () => {
-
-                await api.create(`key0`, 'abcdef');
-                await api.create(`key1`, 'abcdef');
-                await api.create(`key2`, 'abcdef');
-            });
-
-            after('clear database', async () => {
-                await api.delete('key0');
-                await api.delete('key1');
-                await api.delete('key2');
+                await Promise.all(ARRAY_OF_NUMS.map(num => api.create('key' + num, 'abcdef')));
             });
 
             it('should be able to return size', async () => {
@@ -65,8 +58,16 @@ describe('smoke tests', () => {
             });
 
             it('should be able to return key list', async () => {
+
+                const sortedKeys = ARRAY_OF_NUMS.reduce((acc, num) => {
+                    acc.push('key' + num);
+                    return acc
+                }, []).sort();
+
                 const result = await api.keys();
-                assert.deepEqual(result.sort(), ['key2', 'key1', 'key0'].sort())
+
+                assert(result.length === ARRAY_OF_NUMS.length);
+                assert.deepEqual(result.sort(), sortedKeys);
             });
         });
     });
@@ -74,12 +75,13 @@ describe('smoke tests', () => {
     context('database management', () => {
 
         let api2;
+        const SMOKE_TEST_DB_MGMT_UUID = process.env.UUID + '-smoke-test-db-management';
 
         before('initialize client', async () => {
 
             api2 = bluzelle({
                 entry: `ws://${process.env.ADDRESS}:${process.env.PORT}`,
-                uuid: process.env.UUID + 1,
+                uuid: SMOKE_TEST_DB_MGMT_UUID,
                 private_pem: 'MHQCAQEEIFH0TCvEu585ygDovjHE9SxW5KztFhbm4iCVOC67h0tEoAcGBSuBBAAKoUQDQgAE9Icrml+X41VC6HTX21HulbJo+pV1mtWn4+evJAi8ZeeLEJp4xg++JHoDm8rQbGWfVM84eqnb/RVuIXqoz6F9Bg=='
             });
         });
