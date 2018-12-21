@@ -27,7 +27,7 @@ before_install:
 before_script:
   - |
     if [ "$TRAVIS_BRANCH" = "master" ]; then
-        export ADDRESS=testnet.bluzelle.com;
+        export ADDRESS=bernoulli.bluzelle.com;
       else
         export ADDRESS=testnet-dev.bluzelle.com;
     fi
