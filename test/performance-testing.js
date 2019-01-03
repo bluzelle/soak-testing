@@ -1,4 +1,4 @@
-const {BluzelleClient} = require('../bluzelle-js/lib/bluzelle-node');
+const {bluzelle} = require('../bluzelle-js/lib/bluzelle-node');
 const assert = require('assert');
 
 let api;
@@ -7,75 +7,112 @@ let api;
 
         const ARRAY_OF_NUM_OF_KEYS_SIZE = [...Array(numberOfKeys).keys()];
 
+        const PERFORMANCE_TEST_UUID = process.env.UUID + '-performance-test';
+
         console.log(
-            'Using uuid: ' + process.env.UUID +
+            'Using uuid: ' + PERFORMANCE_TEST_UUID +
             '\nUsing address: ' + process.env.ADDRESS +
             '\nUsing port: ' + process.env.PORT +
             '\nNumber of keys: ' + process.env.NUMBER_OF_KEYS
         );
 
-        api = new BluzelleClient(`ws://${process.env.ADDRESS}:${process.env.PORT}`, `${process.env.UUID}`, false);
+        api = bluzelle({
+            entry: `ws://${process.env.ADDRESS}:${process.env.PORT}`,
+            uuid: PERFORMANCE_TEST_UUID,
+            private_pem: 'MHQCAQEEIFH0TCvEu585ygDovjHE9SxW5KztFhbm4iCVOC67h0tEoAcGBSuBBAAKoUQDQgAE9Icrml+X41VC6HTX21HulbJo+pV1mtWn4+evJAi8ZeeLEJp4xg++JHoDm8rQbGWfVM84eqnb/RVuIXqoz6F9Bg=='
+        });
 
-        await api.connect();
+        await api.createDB();
 
-        const options = {api, array: ARRAY_OF_NUM_OF_KEYS_SIZE, numberOfKeys};
+        const options = {api, arr: ARRAY_OF_NUM_OF_KEYS_SIZE, numberOfKeys, delayBetweenBatch: 100, batchSize: 10};
 
-        await profiler(createTest, {...options, value: 'hello'});
+        const initialValue = 'hello';
+        const updatedValue = 'newValue';
 
-        await profiler(readTest, {...options});
+        await profiler(createTest, {...options, value: initialValue});
 
-        await profiler(updateTest, {...options, value: 'newValue'});
+        await profiler(readTest, {...options, value: initialValue});
 
-        await profiler(removeTest, {...options});
+        await profiler(updateTest, {...options, value: updatedValue});
 
-        api.disconnect();
+        await profiler(deleteTest, {...options});
+
         process.exit(0)
 
 })(parseInt(process.env.NUMBER_OF_KEYS)).catch((err) => {
     console.error(err);
-    api.disconnect();
     process.exit(1)
 });
 
-const removeTest = async ({api, array}) => {
+const createTest = async (args) => {
 
-    await batchOperation({client: api, array, operation: 'remove'});
+    const {api, numberOfKeys} = args;
 
-    assert((await api.keys()).length === 0);
-};
-
-const readTest = async ({api, array, numberOfKeys}) => {
-
-    const results = await batchOperation({client: api, array, operation: 'read', delayBetweenBatch: 0, batchSize: 30});
-
-    assert(results.length === numberOfKeys);
-
-    assert(results.every((value) => value === 'hello'))
-};
-
-const createTest = async ({api, array, numberOfKeys, value}) => {
-
-    await batchOperation({client: api, array, operation: 'create', value});
+    await batchOperation({...args, operation: 'create'});
 
     const keys = await api.keys();
 
     assert(keys.length === numberOfKeys);
 };
 
-const updateTest = async ({api, array, numberOfKeys, value}) => {
+const readTest = async (args) => {
 
-    await batchOperation({client: api, array, operation: 'update', value});
+    const {numberOfKeys} = args;
 
-    assert((await api.read(`batch-key${array.length - 1}`)) === value);
+    const {value, ...argsWithoutValue} = args;
+
+    const results = await batchOperation({...argsWithoutValue, operation: 'read', batchSize: 10});
+
+    assert(results.length === numberOfKeys);
+
+    assert(results.every((val) => val === value))
 };
 
-const batchOperation = async ({client, array, operation, value, delayBetweenBatch = 0, batchSize = 10} = {}) => {
+const updateTest = async (args) => {
 
-    const batched = chunk(array, batchSize);
+    const {value, arr} = args;
+
+    await batchOperation({...args, operation: 'update'});
+
+    assert((await api.read(`batch-key${arr.length - 1}`)) === value);
+};
+
+const deleteTest = async (args) => {
+
+    const {api} = args;
+
+    await batchOperation({...args, operation: 'delete'});
+
+    assert((await api.keys()).length === 0);
+};
+
+const profiler = async (fn, arguments) => {
+    const startTime = new Date();
+
+    await fn(arguments);
+
+    const endTime = new Date();
+    console.log(`Total time elapsed: ${endTime - startTime}ms`);
+};
+
+
+const batchOperation = async ({api, arr, operation, value, delayBetweenBatch, batchSize} = {}) => {
+
+    const batched = chunk(arr, batchSize);
 
     const delayedBatch = injectDelays(batched);
 
-    return await processMixedTypeArray({api: client, array: delayedBatch, delay: delayBetweenBatch, operation, value});
+    return await processMixedTypeArray({api, batch: delayedBatch, delayBetweenBatch, operation, value, batchSize});
+};
+
+const chunk = (arr, batchSize = 5) => {
+    const batched = [];
+
+    for (let i = 0; i < arr.length; i += batchSize) {
+        batched.push(arr.slice(i, i + batchSize))
+    }
+
+    return batched;
 };
 
 const injectDelays = (array) => array.reduce((acc, currentValue) => {
@@ -86,35 +123,23 @@ const injectDelays = (array) => array.reduce((acc, currentValue) => {
 
 const delay = ms => new Promise((resolve => setTimeout(resolve, ms)));
 
-const chunk = (array, batchSize = 5) => {
-    const batched = [];
 
-    for (let i = 0; i < array.length; i += batchSize) {
-        batched.push(array.slice(i, i + batchSize))
+const processMixedTypeArray = async ({api, batch, delayBetweenBatch, operation, value, batchSize}) => {
+
+    console.log(`\nRunning ${operation}s, processing ${batchSize} keys per batch`);
+    if (delayBetweenBatch > 0) {
+        console.log(`Delaying ${delayBetweenBatch}ms between batch calls`)
     }
-
-    return batched;
-};
-
-const processMixedTypeArray = async ({api, array, delay, operation, value}) => {
-
-    console.log(`\nRunning ${operation}s`);
 
     let results = [];
     let returnValue;
 
-    for (element of array) {
-
-        if (typeof(element) === 'object') {
-            console.log(`  Processing: ${element.length} keys`)
-        } else {
-            console.log(`  Awaiting delay`)
-        }
+    for (element of batch) {
 
         let batchStartTime = new Date();
 
         if (typeof(element) === 'function') {
-            await element(delay)
+            await element(delayBetweenBatch)
         } else {
 
             try {
@@ -125,6 +150,7 @@ const processMixedTypeArray = async ({api, array, delay, operation, value}) => {
                     if (returnValue !== undefined) {
                         results = [...results, ...returnValue]
                     }
+
                 } else {
                     await Promise.all(element.map((v) => api[operation]('batch-key' + v, value)))
                 }
@@ -134,17 +160,9 @@ const processMixedTypeArray = async ({api, array, delay, operation, value}) => {
         }
 
         let batchTimeElapsed = new Date() - batchStartTime;
-        console.log(`    Completed in: ${batchTimeElapsed}ms`);
+
+        if (typeof(element) === 'object') { console.log(`    Completed in: ${batchTimeElapsed}ms`) }
     }
 
     return results;
-};
-
-const profiler = async (fn, arguments) => {
-    const startTime = new Date();
-
-    await fn(arguments);
-
-    const endTime = new Date();
-    console.log(`Total time elapsed: ${endTime - startTime}ms`);
 };
